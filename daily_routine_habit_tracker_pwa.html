@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AuraTrack — Daily Routine & Habit Tracker</title>
+  
+  <!-- Mobile & PWA Meta Tags -->
+  <meta name="theme-color" content="#090d16">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AuraTrack">
+  <link rel="apple-touch-icon" href="https://placehold.co/192x192/4f46e5/ffffff?text=Aura">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca'
+            },
+            accent: {
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              rose: '#f43f5e',
+              cyan: '#06b6d4'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior-y: contain;
+    }
+    
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.4);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.3);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(99, 102, 241, 0.6);
+    }
+    
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-pill {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .pulse-ring {
+      animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 0.4; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+  </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-brand-500 selection:text-white pb-24 md:pb-12">
+
+  <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-indigo-500 to-accent-cyan flex items-center justify-center shadow-lg shadow-brand-500/20">
+          <i data-lucide="flame" class="w-6 h-6 text-white"></i>
+        </div>
+        <div>
+          <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">AuraTrack</span>
+          <span class="hidden sm:inline-block ml-2 text-xs uppercase px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 font-semibold border border-brand-500/20">PWA Ready</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Install PWA Button -->
+        <button id="installAppBtn" class="hidden items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-white shadow-md shadow-brand-500/20 transition-all">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>Install App</span>
+        </button>
+
+        <!-- Notification Bell Toggle -->
+        <button id="notifyBtn" onclick="toggleNotifications()" title="Notifications Setup" class="p-2 rounded-xl glass-pill hover:bg-slate-800 text-slate-300 hover:text-white transition-all relative">
+          <i data-lucide="bell" id="bellIcon" class="w-5 h-5"></i>
+          <span id="notifyBadge" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-slate-950"></span>
+        </button>
+
+        <!-- Live Stopwatch / Session launcher -->
+        <button onclick="toggleTimerModal(true)" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl glass-pill text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all">
+          <i data-lucide="timer" class="w-4 h-4 text-accent-cyan"></i>
+          <span class="hidden md:inline">Focus Timer</span>
+        </button>
+
+        <!-- Install Guide Helper -->
+        <button onclick="toggleInstallModal(true)" title="How to Install on Phone/PC" class="p-2 rounded-xl glass-pill hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-all">
+          <i data-lucide="help-circle" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Notification Banner if not permitted -->
+  <div id="notifBanner" class="bg-gradient-to-r from-brand-900/60 via-indigo-900/40 to-slate-900 border-b border-indigo-500/20 px-4 py-2.5 text-xs text-indigo-200 flex items-center justify-between transition-all">
+    <div class="flex items-center gap-2 max-w-2xl">
+      <i data-lucide="bell-ring" class="w-4 h-4 text-brand-400 flex-shrink-0 animate-pulse"></i>
+      <span>Enable system notifications so AuraTrack can remind you on your mobile/desktop at your activity times!</span>
+    </div>
+    <div class="flex items-center gap-2 ml-2">
+      <button onclick="requestNotificationPermission()" class="px-3 py-1 rounded bg-brand-600 hover:bg-brand-500 text-white font-medium text-xs whitespace-nowrap shadow">
+        Turn On
+      </button>
+      <button onclick="dismissNotificationBanner()" class="text-slate-400 hover:text-white p-1">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </div>
+
+  <main class="max-w-6xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- Hero / Date Navigator & Overview -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- Date Selector Box -->
+      <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-xs uppercase font-bold tracking-wider text-slate-400">Date Tracked</span>
+          <button onclick="selectToday()" class="text-xs text-brand-400 hover:text-brand-300 font-semibold px-2 py-0.5 rounded bg-brand-500/10">Today</button>
+        </div>
+        <div class="flex items-center justify-between my-3">
+          <button onclick="changeDateOffset(-1)" class="p-2 rounded-lg hover:bg-slate-800 text-slate-300 transition-colors">
+            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+          </button>
+          <div class="text-center">
+            <h2 id="currentDateDisplay" class="text-lg font-bold text-white">Today</h2>
+            <p id="currentSubDateDisplay" class="text-xs text-slate-400">Oct 5, 2026</p>
+          </div>
+          <button onclick="changeDateOffset(1)" class="p-2 rounded-lg hover:bg-slate-800 text-slate-300 transition-colors">
+            <i data-lucide="chevron-right" class="w-5 h-5"></i>
+          </button>
+        </div>
+        <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+          <span>Target Score:</span>
+          <span id="dayCompletionScore" class="font-bold text-accent-emerald text-sm">0%</span>
+        </div>
+      </div>
+
+      <!-- Quick Metrics -->
+      <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-xs uppercase font-bold tracking-wider text-slate-400">Current Momentum</span>
+          <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+        </div>
+        <div class="my-2 flex items-baseline gap-2">
+          <span id="streakCount" class="text-3xl font-extrabold text-white">0</span>
+          <span class="text-slate-400 text-sm font-medium">Days Best Streak</span>
+        </div>
+        <!-- Mini progress bar -->
+        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+          <div id="overviewProgressBar" class="h-full bg-gradient-to-r from-brand-500 to-accent-cyan w-0 transition-all duration-500"></div>
+        </div>
+      </div>
+
+      <!-- Quick Session / Notification Status -->
+      <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-xs uppercase font-bold tracking-wider text-slate-400">Scheduled Reminders</span>
+          <button onclick="testNotificationAlert()" class="text-xs text-brand-400 hover:underline flex items-center gap-1">
+            <i data-lucide="volume-2" class="w-3.5 h-3.5"></i> Test Bell
+          </button>
+        </div>
+        <div class="my-1">
+          <div class="text-sm font-medium text-slate-200" id="nextReminderLabel">Next: 07:00 AM (Jogging)</div>
+          <div class="text-xs text-slate-400 mt-1" id="alarmStateLabel">Background reminder engine active</div>
+        </div>
+        <button onclick="openReminderSettingsModal()" class="w-full py-1.5 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700/60 transition-colors flex items-center justify-center gap-1.5">
+          <i data-lucide="clock" class="w-3.5 h-3.5 text-brand-400"></i>
+          <span>Configure Notification Schedule</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="flex flex-wrap items-center justify-between gap-3 pt-2">
+      <div class="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
+        <button onclick="filterCategory('all')" class="cat-pill active px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-brand-600 text-white transition-all">All Activities</button>
+        <button onclick="filterCategory('study')" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold glass-pill text-slate-400 hover:text-white transition-all">Study</button>
+        <button onclick="filterCategory('fitness')" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold glass-pill text-slate-400 hover:text-white transition-all">Jogging & Fitness</button>
+        <button onclick="filterCategory('practice')" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold glass-pill text-slate-400 hover:text-white transition-all">Practice & Code</button>
+      </div>
+
+      <button onclick="openAddActivityModal()" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-brand-500/25 transition-all">
+        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+        <span>Add New Routine</span>
+      </button>
+    </section>
+
+    <section>
+      <div id="activitiesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Rendered dynamically -->
+      </div>
+      <!-- Empty State -->
+      <div id="emptyActivities" class="hidden text-center py-16 px-4 glass-panel rounded-2xl">
+        <div class="w-12 h-12 mx-auto rounded-full bg-slate-800 flex items-center justify-center text-slate-500 mb-3">
+          <i data-lucide="clipboard-list" class="w-6 h-6"></i>
+        </div>
+        <h3 class="text-base font-semibold text-slate-300">No activities found</h3>
+        <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">Add your daily targets like morning jogging, studying, or coding drills to stay on track.</p>
+        <button onclick="openAddActivityModal()" class="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-semibold">Create Activity</button>
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
+      <!-- 7-Day Consistency Visualization -->
+      <div class="glass-panel p-5 rounded-2xl lg:col-span-2">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="font-bold text-sm text-white">7-Day Completion Velocity</h3>
+            <p class="text-xs text-slate-400">Consistency chart for this current week</p>
+          </div>
+          <span class="text-xs font-mono text-brand-400 bg-brand-500/10 px-2.5 py-1 rounded-md border border-brand-500/20">Auto-Synced</span>
+        </div>
+
+        <!-- Weekly Bars Visualization -->
+        <div class="h-44 flex items-end justify-between gap-2 pt-6 px-2" id="weeklyBarsContainer">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Quick Live Stopwatch / Timer Widget -->
+      <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-sm text-white">Quick Session Stopwatch</h3>
+          <span id="activeTimerBadge" class="text-[10px] font-mono uppercase bg-slate-800 px-2 py-0.5 rounded text-slate-400">Idle</span>
+        </div>
+
+        <div class="my-6 text-center">
+          <div id="quickTimerDisplay" class="text-4xl font-mono font-bold tracking-tight text-white">00:00:00</div>
+          <p id="timerCurrentActivityLabel" class="text-xs text-brand-400 mt-1">Select an activity to time</p>
+        </div>
+
+        <div class="flex gap-2">
+          <button id="quickTimerToggleBtn" onclick="toggleQuickTimer()" class="flex-1 py-2 rounded-xl bg-accent-emerald/90 hover:bg-accent-emerald text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20">
+            <i data-lucide="play" class="w-3.5 h-3.5"></i>
+            <span id="timerBtnText">Start Live Session</span>
+          </button>
+          <button onclick="resetQuickTimer()" class="p-2 rounded-xl glass-pill hover:bg-slate-800 text-slate-300">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+
+  <!-- Add / Edit Activity Modal -->
+  <div id="activityModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md rounded-2xl p-6 border border-slate-700/80 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <h3 id="modalTitle" class="text-base font-bold text-white">Add New Daily Activity</h3>
+        <button onclick="closeActivityModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="activityForm" onsubmit="saveActivity(event)" class="mt-4 space-y-4">
+        <input type="hidden" id="editActivityId">
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Activity Name</label>
+          <input type="text" id="actName" required placeholder="e.g., Morning Jogging, LeetCode, Book Reading" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Category</label>
+            <select id="actCategory" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+              <option value="fitness">Jogging / Fitness</option>
+              <option value="study">Study / Academic</option>
+              <option value="practice">Practicing / Coding</option>
+              <option value="mindset">Reading / Wellness</option>
+              <option value="other">Custom Routine</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Target Duration (min)</label>
+            <input type="number" id="actDuration" min="1" max="600" value="30" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Reminder Time</label>
+            <input type="time" id="actReminderTime" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Color Theme</label>
+            <select id="actColor" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+              <option value="brand">Indigo Brand</option>
+              <option value="emerald">Emerald Green</option>
+              <option value="amber">Warm Amber</option>
+              <option value="rose">Rose Red</option>
+              <option value="cyan">Cyan Aqua</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Motivational Note / Cue</label>
+          <input type="text" id="actNote" placeholder="e.g., Run 3km in park or solve 2 array problems" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        </div>
+
+        <div class="pt-3 flex gap-2">
+          <button type="button" onclick="closeActivityModal()" class="w-1/2 py-2 rounded-xl glass-pill text-xs font-medium text-slate-300 hover:bg-slate-800">Cancel</button>
+          <button type="submit" class="w-1/2 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-lg shadow-brand-500/20">Save Activity</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notification Schedule Settings Modal -->
+  <div id="reminderModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md rounded-2xl p-6 border border-slate-700/80 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <i data-lucide="bell" class="w-5 h-5 text-brand-400"></i>
+          <h3 class="text-base font-bold text-white">Daily Notification Scheduler</h3>
+        </div>
+        <button onclick="toggleModal('reminderModal', false)" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="mt-4 space-y-4 text-xs">
+        <p class="text-slate-300">
+          AuraTrack checks every minute in the browser and Service Worker to chime reminders straight to your system tray and phone notification drawer.
+        </p>
+
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
+          <div>
+            <span class="font-semibold text-white block">Notification Permissions</span>
+            <span id="permStatusLabel" class="text-slate-400">Checking...</span>
+          </div>
+          <button onclick="requestNotificationPermission()" class="px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-medium">Request</button>
+        </div>
+
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
+          <div>
+            <span class="font-semibold text-white block">Play Chime Audio</span>
+            <span class="text-slate-400">Play pleasant sound upon alarm</span>
+          </div>
+          <input type="checkbox" id="soundChimeToggle" checked class="w-4 h-4 accent-indigo-500 cursor-pointer">
+        </div>
+
+        <div class="border-t border-slate-800 pt-3">
+          <h4 class="font-semibold text-slate-200 mb-2">Active Activity Alarms:</h4>
+          <div id="activeAlarmsList" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+            <!-- Dynamic list of times -->
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <button onclick="testNotificationAlert()" class="w-full py-2.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-indigo-200 font-semibold flex items-center justify-center gap-2">
+            <i data-lucide="send" class="w-4 h-4"></i> Trigger Test Notification Now
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PWA Installation Instruction Modal -->
+  <div id="installGuideModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-lg rounded-2xl p-6 border border-slate-700 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <i data-lucide="smartphone" class="w-5 h-5 text-accent-cyan"></i>
+          <h3 class="text-base font-bold text-white">How to Install on Phone & System</h3>
+        </div>
+        <button onclick="toggleInstallModal(false)" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="mt-4 space-y-4 text-xs text-slate-300">
+        <p>AuraTrack is configured as a standalone Progressive Web App (PWA). When installed, it launches like a native program without the URL bar and works offline.</p>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
+            <span class="font-bold text-white flex items-center gap-1.5 text-sm">
+              <i data-lucide="laptop" class="w-4 h-4 text-brand-400"></i> Windows / Mac / Chrome
+            </span>
+            <p>1. Look at your browser address bar on the right side.</p>
+            <p>2. Click the <span class="text-white font-semibold">Install Icon (⊕ or 💻)</span> or click <strong>Install App</strong> in the header.</p>
+            <p>3. It will be added to your Desktop / Applications and run on startup.</p>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
+            <span class="font-bold text-white flex items-center gap-1.5 text-sm">
+              <i data-lucide="smartphone" class="w-4 h-4 text-accent-emerald"></i> Android & iPhone
+            </span>
+            <p><strong>Chrome (Android):</strong> Tap browser menu (⋮) &rarr; tap <span class="text-white font-semibold">"Add to Home Screen"</span> or "Install app".</p>
+            <p><strong>Safari (iOS):</strong> Tap the <span class="text-white font-semibold">Share button</span> (square with arrow) &rarr; scroll down & select <span class="text-white font-semibold">"Add to Home Screen"</span>.</p>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-brand-950/60 border border-brand-800/40 text-brand-200">
+          💡 <strong>Pro Tip:</strong> Once installed on your phone or PC, all your streaks, reminders, and timers continue to run even without an active internet connection.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fullscreen / Dedicated Focus Timer Modal -->
+  <div id="timerModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-sm rounded-3xl p-6 border border-slate-700 text-center relative">
+      <button onclick="toggleTimerModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <span class="text-xs uppercase font-bold tracking-wider text-slate-400">Live Session Clock</span>
+      <h3 id="focusTargetTitle" class="text-lg font-bold text-white mt-1">Study / Deep Work</h3>
+
+      <div class="my-8">
+        <div id="modalTimerDisplay" class="text-5xl font-mono font-extrabold text-white tracking-wider">00:00:00</div>
+        <div class="text-xs text-slate-400 mt-2">Active logging to daily streak</div>
+      </div>
+
+      <div class="flex items-center justify-center gap-3">
+        <button id="modalTimerBtn" onclick="toggleQuickTimer()" class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 font-bold text-sm text-white shadow-lg shadow-brand-500/30">
+          Start
+        </button>
+        <button onclick="resetQuickTimer()" class="px-4 py-2.5 rounded-xl glass-pill hover:bg-slate-800 text-sm text-slate-300">
+          Reset
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Web Audio Synthesizer chime for alerts
+    const AudioEngine = {
+      ctx: null,
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+      },
+      playChime() {
+        try {
+          this.init();
+          if (!this.ctx) return;
+          if (this.ctx.state === 'suspended') this.ctx.resume();
+
+          const now = this.ctx.currentTime;
+          const osc1 = this.ctx.createOscillator();
+          const osc2 = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc1.type = 'sine';
+          osc2.type = 'triangle';
+
+          // Pleasant dual-tone chime
+          osc1.frequency.setValueAtTime(587.33, now); // D5
+          osc1.frequency.exponentialRampToValueAtTime(880.00, now + 0.3); // A5
+
+          osc2.frequency.setValueAtTime(440.00, now); // A4
+          osc2.frequency.exponentialRampToValueAtTime(659.25, now + 0.3); // E5
+
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.3, now + 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc1.start(now);
+          osc2.start(now);
+          osc1.stop(now + 1.2);
+          osc2.stop(now + 1.2);
+        } catch (e) {
+          console.warn('Audio tone error:', e);
+        }
+      }
+    };
+  </script>
+
+  <script>
+    // Default Activities to seed state
+    const DEFAULT_ACTIVITIES = [
+      {
+        id: 'act-1',
+        title: 'Morning Jogging & Running',
+        category: 'fitness',
+        duration: 30,
+        reminderTime: '06:30',
+        color: 'emerald',
+        note: 'Warm up stretch + 3km continuous run'
+      },
+      {
+        id: 'act-2',
+        title: 'Academic & Deep Study',
+        category: 'study',
+        duration: 90,
+        reminderTime: '14:00',
+        color: 'brand',
+        note: 'Revise core concepts and notes'
+      },
+      {
+        id: 'act-3',
+        title: 'Coding & Practice Drills',
+        category: 'practice',
+        duration: 60,
+        reminderTime: '19:30',
+        color: 'cyan',
+        note: 'Solve 2 algorithm problems or build feature'
+      },
+      {
+        id: 'act-4',
+        title: 'Evening Book Reading',
+        category: 'mindset',
+        duration: 25,
+        reminderTime: '22:00',
+        color: 'amber',
+        note: 'Read at least 15 pages before sleep'
+      }
+    ];
+
+    // State
+    let currentDateKey = getFormattedDateKey(new Date());
+    let currentSelectedCategory = 'all';
+    let activities = [];
+    let activityLogs = {}; // { 'YYYY-MM-DD': { 'actId': { completed: true, durationLogged: 30, timestamp: ... } } }
+    let deferredPrompt = null;
+    let timerInterval = null;
+    let timerSeconds = 0;
+    let isTimerRunning = false;
+    let activeTimingActivityId = null;
+
+    function getFormattedDateKey(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    // Load LocalStorage
+    function loadStorage() {
+      try {
+        const storedActs = localStorage.getItem('auratrack_activities');
+        activities = storedActs ? JSON.parse(storedActs) : DEFAULT_ACTIVITIES;
+
+        const storedLogs = localStorage.getItem('auratrack_logs');
+        activityLogs = storedLogs ? JSON.parse(storedLogs) : {};
+      } catch (e) {
+        console.error('Storage parse failed, using defaults', e);
+        activities = DEFAULT_ACTIVITIES;
+        activityLogs = {};
+      }
+    }
+
+    function saveStorage() {
+      try {
+        localStorage.setItem('auratrack_activities', JSON.stringify(activities));
+        localStorage.setItem('auratrack_logs', JSON.stringify(activityLogs));
+      } catch (e) {
+        console.error('Failed to save to localStorage', e);
+      }
+    }
+  </script>
+
+  <script>
+    function renderDashboard() {
+      renderDateHeader();
+      renderActivitiesList();
+      renderStats();
+      renderWeeklyVelocityChart();
+      updateAlarmBadges();
+      lucide.createIcons();
+    }
+
+    function renderDateHeader() {
+      const parts = currentDateKey.split('-');
+      const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      const isToday = currentDateKey === getFormattedDateKey(new Date());
+
+      document.getElementById('currentDateDisplay').textContent = isToday ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      document.getElementById('currentSubDateDisplay').textContent = d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    function renderActivitiesList() {
+      const listEl = document.getElementById('activitiesList');
+      const emptyEl = document.getElementById('emptyActivities');
+
+      const filtered = activities.filter(act => {
+        if (currentSelectedCategory === 'all') return true;
+        return act.category === currentSelectedCategory;
+      });
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = '';
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+      emptyEl.classList.add('hidden');
+
+      const todayLog = activityLogs[currentDateKey] || {};
+
+      listEl.innerHTML = filtered.map(act => {
+        const isDone = todayLog[act.id] && todayLog[act.id].completed;
+        const streak = calculateActivityStreak(act.id);
+        const colorClasses = getColorClasses(act.color);
+
+        return `
+          <div class="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col justify-between border ${isDone ? 'border-brand-500/40 bg-slate-900/90' : 'border-slate-800/80'} transition-all hover:border-slate-700">
+            <!-- Top Row -->
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-start gap-3">
+                <button onclick="toggleActivityComplete('${act.id}')" class="mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center border transition-all ${
+                  isDone 
+                    ? 'bg-accent-emerald border-accent-emerald text-white shadow-md shadow-emerald-500/30' 
+                    : 'border-slate-600 bg-slate-800/50 hover:border-slate-400 text-transparent'
+                }">
+                  <i data-lucide="check" class="w-4 h-4"></i>
+                </button>
+                <div>
+                  <h4 class="font-bold text-sm text-white ${isDone ? 'line-through text-slate-400' : ''}">${escapeHtml(act.title)}</h4>
+                  <p class="text-xs text-slate-400 mt-0.5">${escapeHtml(act.note || 'No notes')}</p>
+                </div>
+              </div>
+
+              <!-- Quick Action Dropdown/Buttons -->
+              <div class="flex items-center gap-1">
+                <button onclick="openEditActivityModal('${act.id}')" title="Edit" class="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800">
+                  <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="deleteActivity('${act.id}')" title="Delete" class="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Bottom Metadata -->
+            <div class="mt-4 pt-3 border-t border-slate-800/70 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded-md font-semibold text-[11px] ${colorClasses.badge}">
+                  ${capitalize(act.category)}
+                </span>
+                <span class="flex items-center gap-1 text-slate-400 font-mono">
+                  <i data-lucide="clock" class="w-3 h-3 text-slate-400"></i> ${act.reminderTime || 'Off'}
+                </span>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <button onclick="startSessionFor('${act.id}')" title="Start timer for this task" class="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-brand-300">
+                  <i data-lucide="play-circle" class="w-4 h-4"></i>
+                </button>
+                <div class="flex items-center gap-1 font-semibold ${streak > 0 ? 'text-amber-400' : 'text-slate-500'}">
+                  <i data-lucide="flame" class="w-3.5 h-3.5"></i>
+                  <span>${streak}d</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function getColorClasses(colorName) {
+      switch(colorName) {
+        case 'emerald': return { badge: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' };
+        case 'amber': return { badge: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' };
+        case 'rose': return { badge: 'bg-rose-500/10 text-rose-400 border border-rose-500/20' };
+        case 'cyan': return { badge: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' };
+        default: return { badge: 'bg-brand-500/10 text-brand-400 border border-brand-500/20' };
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+      });
+    }
+
+    function capitalize(str) {
+      if (!str) return '';
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+  </script>
+
+  <script>
+    function toggleActivityComplete(actId) {
+      if (!activityLogs[currentDateKey]) {
+        activityLogs[currentDateKey] = {};
+      }
+
+      const current = activityLogs[currentDateKey][actId];
+      if (current && current.completed) {
+        activityLogs[currentDateKey][actId].completed = false;
+      } else {
+        activityLogs[currentDateKey][actId] = {
+          completed: true,
+          timestamp: new Date().toISOString()
+        };
+        // Play slight audio confirmation
+        AudioEngine.playChime();
+        if (navigator.vibrate) navigator.vibrate([40]);
+      }
+
+      saveStorage();
+      renderDashboard();
+    }
+
+    function calculateActivityStreak(actId) {
+      let streak = 0;
+      let checkDate = new Date();
+      // If today is completed, count it, else start checking from yesterday
+      const todayKey = getFormattedDateKey(checkDate);
+      const isTodayDone = activityLogs[todayKey] && activityLogs[todayKey][actId] && activityLogs[todayKey][actId].completed;
+
+      if (isTodayDone) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+
+      while (true) {
+        const k = getFormattedDateKey(checkDate);
+        if (activityLogs[k] && activityLogs[k][actId] && activityLogs[k][actId].completed) {
+          streak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+      return streak;
+    }
+
+    function renderStats() {
+      const todayLog = activityLogs[currentDateKey] || {};
+      const total = activities.length;
+      let completedCount = 0;
+
+      activities.forEach(act => {
+        if (todayLog[act.id] && todayLog[act.id].completed) {
+          completedCount++;
+        }
+      });
+
+      const percentage = total === 0 ? 0 : Math.round((completedCount / total) * 100);
+      document.getElementById('dayCompletionScore').textContent = `${percentage}% (${completedCount}/${total})`;
+      document.getElementById('overviewProgressBar').style.width = `${percentage}%`;
+
+      // Overall Max Streak across routines
+      let maxStreak = 0;
+      activities.forEach(act => {
+        const s = calculateActivityStreak(act.id);
+        if (s > maxStreak) maxStreak = s;
+      });
+      document.getElementById('streakCount').textContent = maxStreak;
+    }
+
+    function renderWeeklyVelocityChart() {
+      const container = document.getElementById('weeklyBarsContainer');
+      const days = [];
+      const now = new Date();
+
+      // Get past 7 days ending today
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(now.getDate() - i);
+        days.push(d);
+      }
+
+      container.innerHTML = days.map(dayObj => {
+        const k = getFormattedDateKey(dayObj);
+        const dayName = dayObj.toLocaleDateString('en-US', { weekday: 'narrow' });
+        const log = activityLogs[k] || {};
+        let done = 0;
+        activities.forEach(a => {
+          if (log[a.id] && log[a.id].completed) done++;
+        });
+
+        const percent = activities.length ? Math.round((done / activities.length) * 100) : 0;
+        const isCurrent = k === currentDateKey;
+
+        return `
+          <div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end cursor-pointer group" onclick="jumpToDate('${k}')">
+            <span class="text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity font-mono">${percent}%</span>
+            <div class="w-full max-w-[28px] bg-slate-800/80 rounded-t-lg overflow-hidden flex items-end h-32 relative border ${isCurrent ? 'border-brand-400 ring-1 ring-brand-500/50' : 'border-transparent'}">
+              <div class="w-full bg-gradient-to-t from-brand-600 to-indigo-400 rounded-t-lg transition-all duration-700" style="height: ${percent}%;"></div>
+            </div>
+            <span class="text-xs font-semibold ${isCurrent ? 'text-brand-400' : 'text-slate-400'}">${dayName}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function jumpToDate(dateKey) {
+      currentDateKey = dateKey;
+      renderDashboard();
+    }
+
+    function changeDateOffset(offset) {
+      const parts = currentDateKey.split('-');
+      const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      d.setDate(d.getDate() + offset);
+      currentDateKey = getFormattedDateKey(d);
+      renderDashboard();
+    }
+
+    function selectToday() {
+      currentDateKey = getFormattedDateKey(new Date());
+      renderDashboard();
+    }
+
+    function filterCategory(cat) {
+      currentSelectedCategory = cat;
+      document.querySelectorAll('.cat-pill').forEach(btn => {
+        btn.classList.remove('bg-brand-600', 'text-white');
+        btn.classList.add('glass-pill', 'text-slate-400');
+      });
+      event.target.classList.remove('glass-pill', 'text-slate-400');
+      event.target.classList.add('bg-brand-600', 'text-white');
+      renderActivitiesList();
+      lucide.createIcons();
+    }
+  </script>
+
+  <script>
+    function openAddActivityModal() {
+      document.getElementById('editActivityId').value = '';
+      document.getElementById('modalTitle').textContent = 'Add New Daily Activity';
+      document.getElementById('actName').value = '';
+      document.getElementById('actDuration').value = '30';
+      document.getElementById('actReminderTime').value = '08:00';
+      document.getElementById('actNote').value = '';
+      toggleModal('activityModal', true);
+    }
+
+    function openEditActivityModal(id) {
+      const act = activities.find(a => a.id === id);
+      if (!act) return;
+
+      document.getElementById('editActivityId').value = act.id;
+      document.getElementById('modalTitle').textContent = 'Edit Activity';
+      document.getElementById('actName').value = act.title;
+      document.getElementById('actCategory').value = act.category;
+      document.getElementById('actDuration').value = act.duration || 30;
+      document.getElementById('actReminderTime').value = act.reminderTime || '';
+      document.getElementById('actColor').value = act.color || 'brand';
+      document.getElementById('actNote').value = act.note || '';
+
+      toggleModal('activityModal', true);
+    }
+
+    function closeActivityModal() {
+      toggleModal('activityModal', false);
+    }
+
+    function saveActivity(e) {
+      e.preventDefault();
+      const editId = document.getElementById('editActivityId').value;
+      const title = document.getElementById('actName').value.trim();
+      const category = document.getElementById('actCategory').value;
+      const duration = parseInt(document.getElementById('actDuration').value) || 30;
+      const reminderTime = document.getElementById('actReminderTime').value;
+      const color = document.getElementById('actColor').value;
+      const note = document.getElementById('actNote').value.trim();
+
+      if (!title) return;
+
+      if (editId) {
+        // Edit
+        const idx = activities.findIndex(a => a.id === editId);
+        if (idx !== -1) {
+          activities[idx] = { ...activities[idx], title, category, duration, reminderTime, color, note };
+        }
+      } else {
+        // Add
+        const newAct = {
+          id: 'act-' + Date.now(),
+          title,
+          category,
+          duration,
+          reminderTime,
+          color,
+          note
+        };
+        activities.push(newAct);
+      }
+
+      saveStorage();
+      closeActivityModal();
+      renderDashboard();
+    }
+
+    function deleteActivity(id) {
+      // Safe confirmation box without native alert()
+      const confirmed = window.confirm ? confirm("Remove this activity from your tracking dashboard?") : true;
+      if (confirmed) {
+        activities = activities.filter(a => a.id !== id);
+        saveStorage();
+        renderDashboard();
+      }
+    }
+
+    function toggleModal(modalId, show) {
+      const el = document.getElementById(modalId);
+      if (show) {
+        el.classList.remove('hidden');
+        el.classList.add('flex');
+      } else {
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+      }
+      lucide.createIcons();
+    }
+
+    function toggleInstallModal(show) {
+      toggleModal('installGuideModal', show);
+    }
+
+    function openReminderSettingsModal() {
+      updateNotificationPermissionUI();
+      renderAlarmsList();
+      toggleModal('reminderModal', true);
+    }
+  </script>
+
+  <script>
+    function updateNotificationPermissionUI() {
+      const statusLabel = document.getElementById('permStatusLabel');
+      const badge = document.getElementById('notifyBadge');
+      const banner = document.getElementById('notifBanner');
+
+      if (!('Notification' in window)) {
+        if (statusLabel) statusLabel.textContent = 'Not supported in this browser';
+        if (badge) badge.classList.add('hidden');
+        return;
+      }
+
+      if (Notification.permission === 'granted') {
+        if (statusLabel) statusLabel.textContent = 'Active (Reminders allowed)';
+        if (badge) badge.classList.add('hidden');
+        if (banner) banner.classList.add('hidden');
+      } else if (Notification.permission === 'denied') {
+        if (statusLabel) statusLabel.textContent = 'Blocked in browser settings';
+        if (badge) badge.classList.remove('hidden');
+      } else {
+        if (statusLabel) statusLabel.textContent = 'Not yet granted';
+        if (badge) badge.classList.remove('hidden');
+      }
+    }
+
+    function dismissNotificationBanner() {
+      document.getElementById('notifBanner').classList.add('hidden');
+    }
+
+    async function requestNotificationPermission() {
+      AudioEngine.init();
+      if (!('Notification' in window)) {
+        alertFallback('Notifications are not supported in your browser.');
+        return;
+      }
+
+      try {
+        const result = await Notification.requestPermission();
+        updateNotificationPermissionUI();
+        if (result === 'granted') {
+          showBrowserNotification('AuraTrack Notifications Enabled!', 'You will receive reminders for jogging, study, and practicing right on schedule.');
+          AudioEngine.playChime();
+        }
+      } catch (e) {
+        console.error('Permission request error', e);
+      }
+    }
+
+    function toggleNotifications() {
+      openReminderSettingsModal();
+    }
+
+    function showBrowserNotification(title, body) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+          if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+              type: 'SHOW_NOTIFICATION',
+              title: title,
+              options: {
+                body: body,
+                icon: 'https://placehold.co/192x192/4f46e5/ffffff?text=Aura',
+                badge: 'https://placehold.co/96x96/4f46e5/ffffff?text=Aura',
+                vibrate: [200, 100, 200]
+              }
+            });
+          } else {
+            new Notification(title, {
+              body: body,
+              icon: 'https://placehold.co/192x192/4f46e5/ffffff?text=Aura'
+            });
+          }
+        } catch (e) {
+          console.warn('Direct notification error', e);
+        }
+      }
+    }
+
+    function testNotificationAlert() {
+      AudioEngine.playChime();
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+      if ('Notification' in window && Notification.permission === 'granted') {
+        showBrowserNotification('⏰ Test Routine Alarm', 'AuraTrack test alarm: Time to keep your daily habits glowing!');
+      } else {
+        requestNotificationPermission();
+      }
+    }
+
+    function renderAlarmsList() {
+      const container = document.getElementById('activeAlarmsList');
+      const actsWithTime = activities.filter(a => a.reminderTime);
+
+      if (actsWithTime.length === 0) {
+        container.innerHTML = `<p class="text-slate-500 italic">No scheduled reminders set.</p>`;
+        return;
+      }
+
+      container.innerHTML = actsWithTime.map(a => `
+        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800">
+          <div>
+            <span class="font-medium text-white">${escapeHtml(a.title)}</span>
+            <span class="text-slate-400 block">${a.reminderTime}</span>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">Active</span>
+        </div>
+      `).join('');
+    }
+
+    function updateAlarmBadges() {
+      // Find upcoming reminder
+      const now = new Date();
+      const currentHours = now.getHours();
+      const currentMins = now.getMinutes();
+      const nowVal = currentHours * 60 + currentMins;
+
+      let nextAct = null;
+      let minDiff = Infinity;
+
+      activities.forEach(a => {
+        if (!a.reminderTime) return;
+        const [h, m] = a.reminderTime.split(':').map(Number);
+        const actVal = h * 60 + m;
+        let diff = actVal - nowVal;
+        if (diff < 0) diff += 24 * 60; // next day
+        if (diff < minDiff) {
+          minDiff = diff;
+          nextAct = a;
+        }
+      });
+
+      const label = document.getElementById('nextReminderLabel');
+      if (nextAct) {
+        label.textContent = `Next: ${nextAct.reminderTime} (${nextAct.title})`;
+      } else {
+        label.textContent = 'No alarms configured';
+      }
+    }
+
+    // Minute ticker for checking background alarms
+    let lastNotifiedMinute = '';
+    setInterval(() => {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const currentHM = `${hh}:${mm}`;
+
+      if (currentHM === lastNotifiedMinute) return;
+
+      activities.forEach(act => {
+        if (act.reminderTime === currentHM) {
+          lastNotifiedMinute = currentHM;
+          const chimeEnabled = document.getElementById('soundChimeToggle')?.checked ?? true;
+          if (chimeEnabled) AudioEngine.playChime();
+          if (navigator.vibrate) navigator.vibrate([300, 150, 300]);
+
+          showBrowserNotification(
+            `⏰ Habit Reminder: ${act.title}`,
+            `Scheduled target: ${act.duration} minutes. ${act.note ? '“' + act.note + '”' : 'Time to crush it!'}`
+          );
+        }
+      });
+    }, 10000); // Check every 10 seconds for exact minute hits
+  </script>
+
+  <script>
+    function formatTime(totalSeconds) {
+      const hrs = Math.floor(totalSeconds / 3600);
+      const mins = Math.floor((totalSeconds % 3600) / 60);
+      const secs = totalSeconds % 60;
+      return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function toggleQuickTimer() {
+      AudioEngine.init();
+      const btn = document.getElementById('quickTimerToggleBtn');
+      const modalBtn = document.getElementById('modalTimerBtn');
+      const badge = document.getElementById('activeTimerBadge');
+
+      if (isTimerRunning) {
+        // Pause/Stop
+        clearInterval(timerInterval);
+        isTimerRunning = false;
+        btn.classList.remove('bg-rose-600', 'hover:bg-rose-500');
+        btn.classList.add('bg-accent-emerald/90', 'hover:bg-accent-emerald');
+        document.getElementById('timerBtnText').textContent = 'Resume Live Session';
+        if (modalBtn) modalBtn.textContent = 'Resume';
+        badge.textContent = 'Paused';
+        badge.classList.remove('text-emerald-400');
+        badge.classList.add('text-amber-400');
+      } else {
+        // Start
+        isTimerRunning = true;
+        btn.classList.remove('bg-accent-emerald/90', 'hover:bg-accent-emerald');
+        btn.classList.add('bg-rose-600', 'hover:bg-rose-500');
+        document.getElementById('timerBtnText').textContent = 'Pause Session';
+        if (modalBtn) modalBtn.textContent = 'Pause';
+        badge.textContent = 'Running';
+        badge.classList.remove('text-amber-400');
+        badge.classList.add('text-emerald-400');
+
+        timerInterval = setInterval(() => {
+          timerSeconds++;
+          const formatted = formatTime(timerSeconds);
+          document.getElementById('quickTimerDisplay').textContent = formatted;
+          const modalDisplay = document.getElementById('modalTimerDisplay');
+          if (modalDisplay) modalDisplay.textContent = formatted;
+        }, 1000);
+      }
+    }
+
+    function resetQuickTimer() {
+      clearInterval(timerInterval);
+      isTimerRunning = false;
+      timerSeconds = 0;
+      document.getElementById('quickTimerDisplay').textContent = '00:00:00';
+      const modalDisplay = document.getElementById('modalTimerDisplay');
+      if (modalDisplay) modalDisplay.textContent = '00:00:00';
+
+      const btn = document.getElementById('quickTimerToggleBtn');
+      btn.classList.remove('bg-rose-600', 'hover:bg-rose-500');
+      btn.classList.add('bg-accent-emerald/90', 'hover:bg-accent-emerald');
+      document.getElementById('timerBtnText').textContent = 'Start Live Session';
+
+      const badge = document.getElementById('activeTimerBadge');
+      badge.textContent = 'Idle';
+      badge.classList.remove('text-emerald-400', 'text-amber-400');
+      badge.classList.add('text-slate-400');
+    }
+
+    function startSessionFor(actId) {
+      const act = activities.find(a => a.id === actId);
+      if (!act) return;
+
+      activeTimingActivityId = actId;
+      document.getElementById('timerCurrentActivityLabel').textContent = `Tracking: ${act.title}`;
+      document.getElementById('focusTargetTitle').textContent = act.title;
+      toggleTimerModal(true);
+      if (!isTimerRunning) {
+        toggleQuickTimer();
+      }
+    }
+
+    function toggleTimerModal(show) {
+      toggleModal('timerModal', show);
+    }
+
+    function alertFallback(msg) {
+      const banner = document.getElementById('notifBanner');
+      if (banner) {
+        banner.classList.remove('hidden');
+        banner.querySelector('span').textContent = msg;
+      }
+    }
+  </script>
+
+  <script>
+    // Dynamically inject Web App Manifest as a data URI for full single-file PWA compliance
+    const pwaManifest = {
+      name: "AuraTrack - Daily Habit Tracker",
+      short_name: "AuraTrack",
+      start_url: "./",
+      display: "standalone",
+      background_color: "#020617",
+      theme_color: "#090d16",
+      orientation: "portrait-primary",
+      icons: [
+        {
+          src: "https://placehold.co/192x192/4f46e5/ffffff?text=Aura",
+          sizes: "192x192",
+          type: "image/png"
+        },
+        {
+          src: "https://placehold.co/512x512/4f46e5/ffffff?text=AuraTrack",
+          sizes: "512x512",
+          type: "image/png"
+        }
+      ]
+    };
+
+    const manifestBlob = new Blob([JSON.stringify(pwaManifest)], { type: 'application/json' });
+    const manifestURL = URL.createObjectURL(manifestBlob);
+    const linkTag = document.createElement('link');
+    linkTag.rel = 'manifest';
+    linkTag.href = manifestURL;
+    document.head.appendChild(linkTag);
+
+    // Register Service Worker from Blob for offline caching
+    const swCode = `
+      const CACHE_NAME = 'auratrack-cache-v1';
+      self.addEventListener('install', (e) => {
+        self.skipWaiting();
+      });
+      self.addEventListener('activate', (e) => {
+        e.waitUntil(clients.claim());
+      });
+      self.addEventListener('fetch', (e) => {
+        e.respondWith(
+          fetch(e.request).catch(() => caches.match(e.request))
+        );
+      });
+      self.addEventListener('message', (e) => {
+        if (e.data && e.data.type === 'SHOW_NOTIFICATION') {
+          self.registration.showNotification(e.data.title, e.data.options);
+        }
+      });
+    `;
+
+    if ('serviceWorker' in navigator) {
+      const swBlob = new Blob([swCode], { type: 'application/javascript' });
+      const swURL = URL.createObjectURL(swBlob);
+      navigator.serviceWorker.register(swURL).then(reg => {
+        console.log('AuraTrack PWA Service Worker Registered');
+      }).catch(err => {
+        console.warn('Service Worker registration skipped:', err);
+      });
+    }
+
+    // PWA Install prompt interceptor
+    const installBtn = document.getElementById('installAppBtn');
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.classList.remove('hidden');
+      installBtn.classList.add('flex');
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          installBtn.classList.add('hidden');
+        }
+        deferredPrompt = null;
+      } else {
+        toggleInstallModal(true);
+      }
+    });
+
+    window.addEventListener('appinstalled', () => {
+      installBtn.classList.add('hidden');
+      deferredPrompt = null;
+    });
+  </script>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      loadStorage();
+      renderDashboard();
+      updateNotificationPermissionUI();
+    });
+  </script>
+
+</body>
+</html>
